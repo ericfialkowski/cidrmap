@@ -274,3 +274,7 @@ touches as little memory as possible.
 ```sh
 go test -race ./...
 ```
+
+## License
+
+MIT. See [LICENSE](LICENSE).

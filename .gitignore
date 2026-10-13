@@ -1,0 +1,16 @@
+# Test binaries (go test -c) and profiling output
+*.test
+*.out
+*.prof
+*.pprof
+coverage.*
+
+# Go workspace files, which are local to each developer
+go.work
+go.work.sum
+
+# Editors and OS files
+.idea/
+.vscode/
+*.swp
+.DS_Store
