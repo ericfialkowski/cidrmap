@@ -1,5 +1,7 @@
 # cidrmap
 
+[![Test](https://github.com/ericfialkowski/cidrmap/actions/workflows/test.yml/badge.svg)](https://github.com/ericfialkowski/cidrmap/actions/workflows/test.yml)
+
 A generic Go map keyed by non-overlapping CIDR prefixes. Given an IPv4 or
 IPv6 address, it finds the prefix that contains it, and that prefix's
 value, in O(log n) with no allocations.
