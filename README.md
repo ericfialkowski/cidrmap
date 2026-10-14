@@ -164,8 +164,25 @@ func refreshRanges(ctx context.Context, live *cidrmap.AtomicMap[string], url str
 			log.Printf("refresh failed, keeping current ranges: %v", err)
 			continue
 		}
+		if err := checkRanges(m, live.Load()); err != nil {
+			log.Printf("refresh rejected, keeping current ranges: %v", err)
+			continue
+		}
 		live.Store(m)
 	}
+}
+
+// checkRanges guards against replacing good data with a bad download, such
+// as valid but truncated JSON. Tune the threshold to how much your list
+// legitimately changes between refreshes.
+func checkRanges(next, current *cidrmap.Map[string]) error {
+	if next.Len() == 0 {
+		return errors.New("new list is empty")
+	}
+	if n, c := next.Len(), current.Len(); n < c/2 {
+		return fmt.Errorf("new list has %d prefixes, down from %d", n, c)
+	}
+	return nil
 }
 
 func main() {
@@ -177,6 +194,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	if err := checkRanges(m, new(cidrmap.Map[string])); err != nil {
+		log.Fatal(err)
+	}
 	live := cidrmap.NewAtomic(m)
 	go refreshRanges(ctx, live, url, 6*time.Hour)
 
@@ -186,10 +206,12 @@ func main() {
 }
 ```
 
-Before calling `Store`, you may want a sanity check, such as refusing an
-empty list or one much smaller than the current map
-(`live.Load().Len()`). A feed that returns valid but truncated JSON would
-otherwise replace good data.
+`checkRanges` runs before every `Store`. A download can fail in ways that
+still produce valid JSON, such as a truncated or empty list, and storing
+it would replace good data with bad. The check rejects an empty list, or
+one with less than half as many prefixes as the current map. At startup
+there is no current map to compare against, so only the empty check
+applies.
 
 For small edits rather than full reloads, `Update` copies the current map,
 applies your function, and publishes the copy only if the function
